@@ -1,14 +1,17 @@
 void setup() {
  /* Three LED's */
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(8, OUTPUT);
+//  pinMode(3, OUTPUT);
+//  pinMode(4, OUTPUT);
+//  pinMode(8, OUTPUT);
+//
+//  /* Power Button for LED */
+//  pinMode(9, INPUT);
+//
+// /* Reset Button for Chip */
+//  pinMode(1, INPUT); 
 
-  /* Power Button for LED */
-  pinMode(9, INPUT);
 
- /* Reset Button for Chip */
-  pinMode(1, INPUT); 
+  pinMode(8,OUTPUT);
 
 }
 
@@ -16,8 +19,12 @@ void loop() {
 
   // Matthew Kaiser
 
+  digitalWrite(8,HIGH);
+  delay(1600);
+  digitalWrite(8,LOW);
+  delay(1500);
   //light_single_LED();
-  light_three_LED();
+  //light_three_LED();
 
 }
 
