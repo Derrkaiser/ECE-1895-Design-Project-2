@@ -19,7 +19,7 @@ void setup() {
 void loop() {
   //put your main code here, to run repeatedly:
 
-  OLED.drawString(0,0,"Hello World!");
+  u8x8.draw2x2String(1, 1, "Score:");
   OLED.setCursor(50,50);
   OLED.print(a);
 

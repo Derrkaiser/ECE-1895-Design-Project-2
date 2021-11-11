@@ -23,7 +23,6 @@ float force_read_voltage;
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(8,OUTPUT); /* Used for testing, lights up a LED */
   Serial.begin(9600);
   int force_read_1;
   int force_read_2;
@@ -136,42 +135,7 @@ bool poll_FSR(uint8_t fsr_pin, int pad_number)
       return true;
     }
   } 
-//  switch(pad_number){
-//    case 1:
-//      while(true)
-//      {
-//        force_read = analogRead(FSR1);
-//        force_read_voltage = force_read * (5.0 / 1023.0);
-//        if(force_read > force_threshold[pad_number])
-//        {
-//          return true;
-//        }
-//      } 
-//      break;
-//    case 2:
-//      while(true)
-//      {
-//        force_read = analogRead(FSR2);
-//        force_read_voltage = force_read * (5.0 / 1023.0);
-//        if(force_read > force_threshold[pad_number])
-//        {
-//          return true;
-//        }
-//      } 
-//      break;
-//    case 3:
-//      while(true)
-//      {
-//        force_read = analogRead(FSR3);
-//        force_read_voltage = force_read * (5.0 / 1023.0);
-//        if(force_read > force_threshold[pad_number])
-//        {
-//          return true;
-//        }
-//      } 
-//      break;
-//  }
-      
+
     
     
 }
