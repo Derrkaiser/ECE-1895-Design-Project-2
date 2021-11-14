@@ -1,4 +1,4 @@
-DRC Rules Export File for PCB: C:\Users\LPS22\OneDrive\Documents\Pitt\Senior\Fall\ECE1895\git\ECE-1895-Design-Project-2\PCB\BopIt\PCB2.PcbDoc
+DRC Rules Export File for PCB: C:\Users\liams\OneDrive\Documents\Pitt\Senior\Fall\ECE1895\git\ECE-1895-Design-Project-2\PCB\BopIt\PCB2.PcbDoc
 RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=4.00
 RuleKind=Width|RuleName=Width|Scope=Board|Minimum=10.00
 RuleKind=Clearance|RuleName=Clearance|Scope=Board|Minimum=10.00

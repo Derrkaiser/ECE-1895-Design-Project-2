@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: PCB2.GBR   11/2/2021  8:34:57 PM
+Gerber File Extension Report For: PCB2.GBR   11/8/2021  11:30:37 AM
 ------------------------------------------------------------------------------------------
 
 
@@ -14,6 +14,7 @@ Layer Extension     Layer Description
 .GBS                Bottom Solder                           
 .GM13               Mechanical 13                           
 .GM15               Mechanical 15                           
+.GKO                Keep-Out Layer                          
 .GPT                Top Pad Master                          
 .GPB                Bottom Pad Master                       
 ------------------------------------------------------------------------------------------
