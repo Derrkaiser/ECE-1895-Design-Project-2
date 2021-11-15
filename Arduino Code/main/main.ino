@@ -4,6 +4,10 @@
 #include <SD.h>
 #include <TMRpcm.h>
 
+
+#define debugMode 1 /* 1 for serial monitor output, 0 for no debug */
+
+
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN        3 // On Trinket or Gemma, suggest changing this to 1
 
@@ -38,10 +42,19 @@ uint8_t score = 0; /* Score for the user */
 
 
 /* ----------------------------------------------------- Sensor Related Variables and Constructors ----------------------------------------------------- */
+
+#if debugMode
+  /* FRS Pins on Arduino Uno */
+  #define FSR1  A2
+  #define FSR2  A1
+  #define FSR3  A0
+#else
 /* FSR Pins */
 #define FSR1  A3
 #define FSR2  A4
 #define FSR3  A5
+#endif
+
 uint8_t FSR[3] = {FSR1, FSR2, FSR3};
 
 /* Magnet Pins */
@@ -79,7 +92,6 @@ float force_offset = 0.15;
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 
-#define debugMode 1 /* 1 for serial monitor output, 0 for no debug */
 
 void setup() {
 
@@ -90,9 +102,12 @@ void setup() {
 
   /* Initialize OLED and display intro message */
   OLED.begin();
-  OLED.setFont(u8x8_font_chroma48medium8_r);
-  OLED.drawString(0,0,"Welcome to Bonk-It!");
+  OLED.setFont(u8x8_font_px437wyse700b_2x2_r);
+  OLED.drawString(0,0,"Welcome");
+  OLED.drawString(0,2,"to");
+  OLED.drawString(0,4,"Bonk-It!");
 
+  
   initialize_pads();
   
   boot_sequence();
@@ -102,14 +117,21 @@ void setup() {
 #endif
 
   OLED.clear();
-  OLED.drawString(3,3,"Hit Start Button"); // TODO: Change location of where this outputs
+  OLED.drawString(0,0,"Press");
+  OLED.drawString(0,2,"Start");
+  OLED.drawString(0,4,"Button");
+  OLED.drawString(0,6,"To Play");
 }
 
 void loop() {
-  static uint8_t start_game;
-  if (digitalRead(startButton) || start_game == 1)
+  //TODO: Check to see if want this to display when people play again
+//  OLED.clear();
+//  OLED.drawString(0,0,"Press");
+//  OLED.drawString(0,2,"Start");
+//  OLED.drawString(0,4,"Button");
+//  OLED.drawString(0,6,"To Play");
+  if (digitalRead(startButton))
   {
-    start_game = 1;
     play_game();
   }
 }
@@ -152,7 +174,7 @@ void play_game() {
           /* Update the score and display and proceed to next round */
           score++;
           update_display();
-          continue; /* Go back to the start of the void loop() function */
+          continue; /* Go back to the start of the while loop function */
         }
         else /* Incorrect strength, the user loses */
         {
@@ -295,21 +317,44 @@ void update_display()
 void game_over()
 {
   OLED.clear();
-  OLED.drawString(5,5,"YOU LOSE"); //TODO CHANGE FONT SIZE
-  show_score();
+  OLED.drawString(0,0,"You LOSE");
+  show_score(true); 
+  play_again(); 
 }
 
 void win() {
   OLED.clear();
-  OLED.drawString(5,5,"YOU WIN!"); //TODO CHANGE FONT SIZE
-  show_score();
+  OLED.drawString(0,0,"You WIN!");
+  play_again();
+}
+
+void play_again()
+{
+    /* Reset the game for next run through */
+    delay(5000); 
+    score = 0;
+    initialize_pads();
+    OLED.clear();
+    OLED.drawString(0,4,"Play");
+    OLED.drawString(0,6,"Again?");
+    /* Function returns to play_game which then immediately returns to loop() */
 }
 
 // Helper function to show the score on the OLED
-void show_score() {
-  OLED.drawString(10,10, "Score: "); //TODO: CHANGE LOCATION OF CURSOR AND SIZE
-  OLED.setCursor(10,16); //TODO: CHANGE LOCATION OF CURSOR
-  OLED.print(score);
+void show_score(bool lost) {
+
+  if(lost == true)
+  {
+    OLED.drawString(0,2, "Score: "); 
+    OLED.setCursor(12,2);
+    OLED.print(score);
+  }
+  else
+  {
+    OLED.drawString(0,0, "Score: "); 
+    OLED.setCursor(12,0);
+    OLED.print(score);
+  }
 }
 
 
