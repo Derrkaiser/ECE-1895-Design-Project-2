@@ -29,7 +29,7 @@ double colors[12] = {pixels.Color(255,255,0),pixels.Color(255,238,0),pixels.Colo
 U8X8_SSD1306_128X64_NONAME_4W_SW_SPI OLED(/* clock=*/ 13, /* data=*/ 11, /* cs=*/ 7, /* dc=*/ 8, /* reset=*/ 4);
 /* 128 x 64 display = 16 columns x 8 rows */
 
-int score = 0; /* Score for the user */
+uint8_t score = 0; /* Score for the user */
 
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -57,10 +57,10 @@ int score = 0; /* Score for the user */
 #define startButton 2
 
 /* Global array to hold starting values of the force sensors at null input */
-float force_threshold[3] = {0,0,0}; 
+float force_threshold[3]; 
 
 /* Global array to store the value read from sensor hits. Used to determine hit as well as the hitting of the wrong pad */
-uint16_t force_read_voltage[3] = {0,0,0};
+uint16_t force_read_voltage[3];
 
 /* Global array to store the pin values for the FSR pads */
 uint8_t fsr_pins[3] = {FSR1, FSR2, FSR3};
@@ -69,7 +69,7 @@ uint8_t fsr_pins[3] = {FSR1, FSR2, FSR3};
 //uint8_t[3] magnet_pins = {magnet1, magnet2, magnet3};
 
 /* Global array used to store analogRead() input and used to setup force_threshold calculation */
-int force_read[3] = {0,0,0};
+uint16_t force_read[3] = {0,0,0};
 
 /* Variable used to add to force_threshold in order to limit accidental readings counting as hits */
 float force_offset = 0.15;
@@ -78,7 +78,6 @@ float force_offset = 0.15;
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 
-// TODO: ADD TIMING TO poll_FSR. i.e. if they dont hit in time, then they lose 
 void setup() {
 
   /* Start serial for Ardunio uno testing */
@@ -100,77 +99,92 @@ void setup() {
   Serial.println(force_threshold[2]);
   Serial.println(force_threshold[3]);
 
-  while(digitalRead(startButton) != 1)
-  {
-    Serial.println("Waiting for start button");
-    OLED.drawString(3,3,"Hit Start Button"); // TODO: Change location of where this outputs
-  }
+  boot_sequence();
+
+  Serial.println("Waiting for start button");
+  OLED.clear();
+  OLED.drawString(3,3,"Hit Start Button"); // TODO: Change location of where this outputs
 }
 
 void loop() {
-  //put your main code here, to run repeatedly:
-
-  long random_pad = random(1,3); /* 1 = Pad 1, 2 = Pad 2, 3 = Pad 3 */
-  bool hit_strength = random(0,1); /* 0 = weak, 1 = hard */
-  bool magnet_hit = random(0,1); /* 0 = non-magnet, 1 = magnet */
-
-  uint8_t pad_returned = 0; /* Which pad was hit, returned from poll_FSR */
-
-  unsigned long time = millis();
-  unsigned long timeout = 3000 - 25 * score - time;
-
-  while(millis() <= timeout && !pad_returned)
-    pad_returned = poll_FSR(random_pad); /* Poll the FSR's */
-
-  if (millis() > timeout)
-    game_over();
-
-  /* If non-magnetic hit */
-  if(!magnet_hit)
-  {
-    if(pad_returned == random_pad) /* Correct pad was hit */
-    {
-      /* Check if correct strength */
-      if(check_correct_hit_strength(pad_returned) == true)
-      {
-        /* Update the score and display and proceed to next round */
-        score++;
-        update_display();
-        return; /* Go back to the start of the void loop() function */
-      }
-      else /* Incorrect strength, the user loses */
-      {
-        /* Update the display and issue game-over */
-        game_over();
-      }
-    }
-    
-  }
-  
-  
-  /* If magnetic hit */
-  else
-  {
-    
-  }
-  /* Start Game, randomly select one of the actions and pad
-   *  1. Hit selected pad with non-magnet side softly
-   *  2. Hit selected pad with non-magnet side strongly
-   *  3. Hit selected pad with magnet side softly
-   *  4. Hit selected pad with magnet side strongly
-   *  
-   *  Magnet vs Non-magnet and Hard vs Soft hit is chosen similarly
-   *  Function is then called based on choice
-   *  void magnet_hit(int pad_number, bool isStrong) 
-   *    isStrong = 1 -> Strong hit
-   *    isStrong = 0 -> Soft hit
-   * 
-   *  void non_magnet_hit(int pad_number, bool isStrong)
-   */
-
+  if (digitalRead(startButton))
+    play_game();
 }
 
 
+void play_game() {
+  // Declaring round variables that are updated each loop
+  long random_pad;
+  bool hit_strength, magnet_hit;
+  unsigned long time, timeout;
+  uint8_t pad_returned;
+
+  while (score < 100) {
+    // Update round variables
+    random_pad = random(1,3); /* 1 = Pad 1, 2 = Pad 2, 3 = Pad 3 */
+    hit_strength = random(0,1); /* 0 = weak, 1 = hard */
+    magnet_hit = random(0,1); /* 0 = non-magnet, 1 = magnet */
+    pad_returned = 0; /* Which pad was hit, returned from poll_FSR */
+
+    // Setup timer
+    time = millis();
+    timeout = 3000 - 25 * score - time;
+
+    // Run timeout timer and detect input
+    while(millis() <= timeout && !pad_returned)
+      pad_returned = poll_FSR(random_pad); /* Poll the FSR's */
+
+    // End game if too much time passed
+    if (millis() > timeout)
+      break;
+
+    /* If non-magnetic hit */
+    if(!magnet_hit)
+    {
+      if(pad_returned == random_pad) /* Correct pad was hit */
+      {
+        /* Check if correct strength */
+        if(check_correct_hit_strength(pad_returned))
+        {
+          /* Update the score and display and proceed to next round */
+          score++;
+          update_display();
+          continue; /* Go back to the start of the void loop() function */
+        }
+        else /* Incorrect strength, the user loses */
+        {
+          /* Update the display and issue game-over */
+          break;
+        }
+      }
+    }
+    
+    /* If magnetic hit */
+    else
+    {
+      
+    }
+    /* Start Game, randomly select one of the actions and pad
+    *  1. Hit selected pad with non-magnet side softly
+    *  2. Hit selected pad with non-magnet side strongly
+    *  3. Hit selected pad with magnet side softly
+    *  4. Hit selected pad with magnet side strongly
+    *  
+    *  Magnet vs Non-magnet and Hard vs Soft hit is chosen similarly
+    *  Function is then called based on choice
+    *  void magnet_hit(int pad_number, bool isStrong) 
+    *    isStrong = 1 -> Strong hit
+    *    isStrong = 0 -> Soft hit
+    * 
+    *  void non_magnet_hit(int pad_number, bool isStrong)
+    */
+  }
+
+  // Win only if score is 99 or more
+  (score < 99) ? game_over() : win();
+
+  return;
+}
 
 void magnet_hit(int pad_number, bool isStrong)
 {
@@ -272,19 +286,27 @@ void non_magnet_hit(int pad_number, bool isStrong)
 void update_display()
 {
   OLED.clear();
-  OLED.drawString(5,5,"Score:"); //TODO CHANGE FONT SIZE
-  OLED.setCursor(10,10); //TODO: CHANGE LOCATION OF CURSOR
-  OLED.print(score);
+  show_score();
 }
 
 void game_over()
 {
   OLED.clear();
   OLED.drawString(5,5,"YOU LOSE"); //TODO CHANGE FONT SIZE
+  show_score();
+}
+
+void win() {
+  OLED.clear();
+  OLED.drawString(5,5,"YOU WIN!"); //TODO CHANGE FONT SIZE
+  show_score();
+}
+
+// Helper function to show the score on the OLED
+void show_score() {
   OLED.drawString(10,10, "Score: "); //TODO: CHANGE LOCATION OF CURSOR AND SIZE
   OLED.setCursor(10,16); //TODO: CHANGE LOCATION OF CURSOR
   OLED.print(score);
-
 }
 
 
@@ -292,11 +314,14 @@ void game_over()
  *  
  *  @param hit_strength: How hard the pad was hit, used to determine how much of ring to light up
  */
-void toggle_LED_ring(int pad_number, double hit_strength)
+void toggle_LED_ring(uint8_t pad_number, double hit_strength)
 {
   /* Light up the LED corresponding to the selected pad_number
    *  digitalWrite(pad_number, HIGH);
    */
+
+  // Exit if pad number is 0
+  if (!pad_number) return;
 
   // double hit_strength = 1.0;
   double decrement = hit_strength/12;;
@@ -304,49 +329,21 @@ void toggle_LED_ring(int pad_number, double hit_strength)
   // The first NeoPixel in a strand is #0, second is 1, all the way up
   // to the count of pixels minus one.
 
-/* 
-  0-11 - pad 1
-  12-23 - pad 2
-  24-35 - [ad 3
-*/
+  /* 
+    0-11 - pad 1
+    12-23 - pad 2
+    24-35 - [ad 3
+  */
 
-  if(pad_number == 1)
+  uint8_t i = (pad_number - 1) * 12;
+  uint8_t pad_index = i;
+  while(hit_strength > 0)
   {
-      int i = 0;
-      while(hit_strength > 0)
-      {
-        pixels.setPixelColor(i,colors[i]);
-        hit_strength = hit_strength - decrement;
-        pixels.show();
-        delay(DELAYVAL);
-        i++;
-      }
-  }
-
-  else if (pad_number == 2)
-  {
-      int i = 12;
-      while(hit_strength > 0)
-      {
-        pixels.setPixelColor(i,colors[i-12]);
-        hit_strength = hit_strength - decrement;
-        pixels.show();
-        delay(DELAYVAL);
-        i++;
-      }
-  }
-
-  else if(pad_number == 3)
-  {
-    int i = 24;
-      while(hit_strength > 0)
-      {
-        pixels.setPixelColor(i,colors[i-24]);
-        hit_strength = hit_strength - decrement;
-        pixels.show();
-        delay(DELAYVAL);
-        i++;
-      }
+    pixels.setPixelColor(i,colors[i - pad_index]);
+    hit_strength = hit_strength - decrement;
+    pixels.show();
+    delay(DELAYVAL);
+    i++;
   }
 }
 
@@ -375,37 +372,20 @@ void boot_sequence()
 /* Function to poll the FSR's and return which one was hit */
 uint8_t poll_FSR(uint8_t pad)
 {
-  while(true)
-  {
+  for (uint8_t i = 0; i < 3; i++) {
     /* Read in from all of the pins */
-    force_read[1] = analogRead(fsr_pins[1]);
-    force_read[2] = analogRead(fsr_pins[2]);
-    force_read[3] = analogRead(fsr_pins[3]);
+    force_read[i] = analogRead(fsr_pins[i]);
 
     /* Convert values to voltages */
-    force_read_voltage[1] = force_read[1] * (5.0 / 1023.0);
-    force_read_voltage[2] = force_read[2] * (5.0 / 1023.0);
-    force_read_voltage[3] = force_read[3] * (5.0 / 1023.0);
+    force_read_voltage[i] = force_read[i] * (5.0 / 1023.0);
 
     /* Check if any of the read voltages surpass the threshold for its pad, if so return that the pad was hit */
-    if(force_read_voltage[1] > force_threshold[1] + force_offset)
-    {
-      return 1; /* Pad 1 was hit */
-    }
-    else if (force_read_voltage[2] > force_threshold[2]+ force_offset)
-    {
-      return 2; /* Pad 2 was hit */
-    }
-    else if (force_read_voltage[3] > force_threshold[3] + force_offset)
-    {
-      return 3; /* Pad 3 was hit */
-    }
-    else
-    {
-      return 0; /* Shouldn't occur */
-    }
+    if(force_read_voltage[i] > force_threshold[i] + force_offset)
+      return i + 1;
+  }
 
-  }  
+  // No pad was hit
+  return 0;
 }
 
 /* Helper function to check if the pad was hit with the correct strength */
