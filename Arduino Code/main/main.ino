@@ -79,37 +79,39 @@ float force_offset = 0.15;
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 
+#define debugMode 1 /* 1 for serial monitor output, 0 for no debug */
+
 void setup() {
 
+#if debugMode
   /* Start serial for Ardunio uno testing */
   Serial.begin(9600);
+#endif
 
   /* Initialize OLED and display intro message */
   OLED.begin();
   OLED.setFont(u8x8_font_chroma48medium8_r);
   OLED.drawString(0,0,"Welcome to Bonk-It!");
 
-
-  /* Read in sensor output and set value read in as the zero */
-  for (uint8_t i = 0; i < 3; i++) {
-    force_read_voltage[i] = analogRead(FSR[i]);
-    force_threshold[i] = force_read_voltage[i] * (5.0 / 1023.0);
-  }
+  initialize_pads();
   
-  Serial.println(force_threshold[1]);
-  Serial.println(force_threshold[2]);
-  Serial.println(force_threshold[3]);
-
   boot_sequence();
 
+#if debugMode
   Serial.println("Waiting for start button");
+#endif
+
   OLED.clear();
   OLED.drawString(3,3,"Hit Start Button"); // TODO: Change location of where this outputs
 }
 
 void loop() {
-  if (digitalRead(startButton))
+  static uint8_t start_game;
+  if (digitalRead(startButton) || start_game == 1)
+  {
+    start_game = 1;
     play_game();
+  }
 }
 
 
@@ -361,13 +363,21 @@ void audio_cue(uint8_t pad_number, bool isStrong, bool hit_with_magnet)
 
 void boot_sequence()
 {
-  /* Turn on any necessary LED and start up the main display
-   *  
-   *  digitalWrite(LED, HIGH)
-   *  
-   *  write_to_display("Game on");
-   *  also display the high score and any other display information wanted
-   */
+
+}
+void initialize_pads()
+{
+  /* Read in sensor output and set value read in as the zero */
+    for (uint8_t i = 0; i < 3; i++) {
+      force_read_voltage[i] = analogRead(FSR[i]);
+      force_threshold[i] = force_read_voltage[i] * (5.0 / 1023.0);
+    }
+
+#if debugMode    
+    Serial.println(force_threshold[1]);
+    Serial.println(force_threshold[2]);
+    Serial.println(force_threshold[3]);
+#endif
 }
 
 /* Function to poll the FSR's and return which one was hit */
