@@ -42,6 +42,7 @@ uint8_t score = 0; /* Score for the user */
 #define FSR1  A3
 #define FSR2  A4
 #define FSR3  A5
+uint8_t FSR[3] = {FSR1, FSR2, FSR3};
 
 /* Magnet Pins */
 #define magnet1  A0
@@ -90,8 +91,8 @@ void setup() {
 
 
   /* Read in sensor output and set value read in as the zero */
-  for (unsigned short i = 0; i < 3; i++) {
-    force_read_voltage[i] = analogRead(FSR1);
+  for (uint8_t i = 0; i < 3; i++) {
+    force_read_voltage[i] = analogRead(FSR[i]);
     force_threshold[i] = force_read_voltage[i] * (5.0 / 1023.0);
   }
   
@@ -132,7 +133,7 @@ void play_game() {
 
     // Run timeout timer and detect input
     while(millis() <= timeout && !pad_returned)
-      pad_returned = poll_FSR(random_pad); /* Poll the FSR's */
+      pad_returned = poll_FSR(); /* Poll the FSR's */
 
     // End game if too much time passed
     if (millis() > timeout)
@@ -370,7 +371,7 @@ void boot_sequence()
 }
 
 /* Function to poll the FSR's and return which one was hit */
-uint8_t poll_FSR(uint8_t pad)
+uint8_t poll_FSR()
 {
   for (uint8_t i = 0; i < 3; i++) {
     /* Read in from all of the pins */
