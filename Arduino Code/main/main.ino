@@ -115,7 +115,7 @@ void loop() {
 
 void play_game() {
   // Declaring round variables that are updated each loop
-  long random_pad;
+  uint8_t random_pad;
   bool hit_strength, magnet_hit;
   unsigned long time, timeout;
   uint8_t pad_returned;
