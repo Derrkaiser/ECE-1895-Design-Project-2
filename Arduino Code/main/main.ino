@@ -49,10 +49,10 @@ uint8_t score = 0; /* Score for the user */
   #define FSR2  A1
   #define FSR3  A0
 #else
-/* FSR Pins */
-#define FSR1  A3
-#define FSR2  A4
-#define FSR3  A5
+  /* FSR Pins */
+  #define FSR1  A3
+  #define FSR2  A4
+  #define FSR3  A5
 #endif
 
 uint8_t FSR[3] = {FSR1, FSR2, FSR3};
@@ -87,6 +87,9 @@ uint16_t force_read[3] = {0,0,0};
 
 /* Variable used to add to force_threshold in order to limit accidental readings counting as hits */
 float force_offset = 0.15;
+
+/* Global array to store the threshold for where the weak/hit threshold is */
+float hit_strength_threshold[3];
 
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -148,7 +151,7 @@ void play_game() {
     // Update round variables
     random_pad = random(1,3); /* 1 = Pad 1, 2 = Pad 2, 3 = Pad 3 */
     hit_strength = random(0,1); /* 0 = weak, 1 = hard */
-    magnet_hit = random(0,1); /* 0 = non-magnet, 1 = magnet */
+    magnet_hit = random(0,1); /* 0 = magnet, 1 = non-magnet */
     pad_returned = 0; /* Which pad was hit, returned from poll_FSR */
 
     // Setup timer
@@ -169,16 +172,16 @@ void play_game() {
       if(pad_returned == random_pad) /* Correct pad was hit */
       {
         /* Check if correct strength */
-        if(check_correct_hit_strength(pad_returned))
+        if(check_correct_hit_strength(pad_returned, hit_strength))
         {
           /* Update the score and display and proceed to next round */
           score++;
-          update_display();
+          show_score(false); //true => game continues and show score
           continue; /* Go back to the start of the while loop function */
         }
         else /* Incorrect strength, the user loses */
         {
-          /* Update the display and issue game-over */
+          /* Breaks loop and executes game_over() */
           break;
         }
       }
@@ -189,25 +192,10 @@ void play_game() {
     {
       
     }
-    /* Start Game, randomly select one of the actions and pad
-    *  1. Hit selected pad with non-magnet side softly
-    *  2. Hit selected pad with non-magnet side strongly
-    *  3. Hit selected pad with magnet side softly
-    *  4. Hit selected pad with magnet side strongly
-    *  
-    *  Magnet vs Non-magnet and Hard vs Soft hit is chosen similarly
-    *  Function is then called based on choice
-    *  void magnet_hit(int pad_number, bool isStrong) 
-    *    isStrong = 1 -> Strong hit
-    *    isStrong = 0 -> Soft hit
-    * 
-    *  void non_magnet_hit(int pad_number, bool isStrong)
-    */
   }
 
   // Win only if score is 99 or more
   (score < 99) ? game_over() : win();
-
   return;
 }
 
@@ -304,21 +292,11 @@ void non_magnet_hit(int pad_number, bool isStrong)
 
 }
 
-/* Function to update the display. If the user lost, then update the display
- *  and turn off the game. If they did not lose, update the display score and continue the game
- *  */
-
-void update_display()
-{
-  OLED.clear();
-  show_score();
-}
-
 void game_over()
 {
   OLED.clear();
   OLED.drawString(0,0,"You LOSE");
-  show_score(true); 
+  show_score(true); // show_score(true) means they lost
   play_again(); 
 }
 
@@ -341,16 +319,17 @@ void play_again()
 }
 
 // Helper function to show the score on the OLED
-void show_score(bool lost) {
-
+void show_score(bool lost) 
+{
   if(lost == true)
   {
     OLED.drawString(0,2, "Score: "); 
     OLED.setCursor(12,2);
     OLED.print(score);
   }
-  else
+  else /* Game still in progress */
   {
+    OLED.clear();
     OLED.drawString(0,0, "Score: "); 
     OLED.setCursor(12,0);
     OLED.print(score);
@@ -414,8 +393,10 @@ void initialize_pads()
 {
   /* Read in sensor output and set value read in as the zero */
     for (uint8_t i = 0; i < 3; i++) {
-      force_read_voltage[i] = analogRead(FSR[i]);
-      force_threshold[i] = force_read_voltage[i] * (5.0 / 1023.0);
+      force_read[i] = analogRead(FSR[i]);
+      force_threshold[i] = force_read[i] * (5.0 / 1023.0);
+      hit_strength_threshold[i] = force_threshold[i] + 1.5; //TODO Check the offset with testing to see where soft/hard hit should end
+      
     }
 
 #if debugMode    
@@ -445,7 +426,31 @@ uint8_t poll_FSR()
 }
 
 /* Helper function to check if the pad was hit with the correct strength */
-long check_correct_hit_strength(uint8_t pad_number)
+bool check_correct_hit_strength(uint8_t pad_number, uint8_t hit_strength)
 {
-  
+  /* hit_strength = 0 => weak
+   * hit_strength = 1 => hard
+   */
+  if(hit_strength == 1)
+  {
+    if(force_read_voltage[pad_number] >= hit_strength_threshold[pad_number])
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else if(hit_strength == 0)
+  {
+    if(force_read_voltage[pad_number] < hit_strength_threshold[pad_number])
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
 }
