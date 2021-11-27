@@ -1,8 +1,9 @@
 #include <Adafruit_NeoPixel.h>
 #include <SPI.h>
-#include <U8x8lib.h>
 #include <SD.h>
 #include <TMRpcm.h>
+#include <U8x8lib.h>
+
 
 
 #define debugMode 1 /* 1 for serial monitor output, 0 for no debug */
@@ -62,10 +63,6 @@ uint8_t FSR[3] = {FSR1, FSR2, FSR3};
 #define magnet2  A1
 #define magnet3  A2
 
-/* FRS Pins on Arduino Uno */
-// #define FSR1  A2
-// #define FSR2  A1
-// #define FSR3  A0
 
 /* Start Button Pin */
 #define startButton 2
@@ -73,17 +70,21 @@ uint8_t FSR[3] = {FSR1, FSR2, FSR3};
 /* Global array to hold starting values of the force sensors at null input */
 float force_threshold[3]; 
 
+
+/* Global array used to store analogRead() input and used to setup force_threshold calculation */
+uint16_t force_read[3] = {0,0,0};
+
 /* Global array to store the value read from sensor hits. Used to determine hit as well as the hitting of the wrong pad */
-uint16_t force_read_voltage[3];
+float force_read_voltage[3] = {0,0,0};
 
 /* Global array to store the pin values for the FSR pads */
 uint8_t fsr_pins[3] = {FSR1, FSR2, FSR3};
 
-/* Global array to store the pin values for the FSR pads */
-//uint8_t[3] magnet_pins = {magnet1, magnet2, magnet3};
+/* Global array to store the pin values for the magnets */
+uint8_t magnet_pins[3] = {magnet1, magnet2, magnet3};
 
-/* Global array used to store analogRead() input and used to setup force_threshold calculation */
-uint16_t force_read[3] = {0,0,0};
+/* Global array to store digitalRead() input for magnets */
+uint8_t magnet_read[3] = {0,0,0};
 
 /* Variable used to add to force_threshold in order to limit accidental readings counting as hits */
 float force_offset = 0.15;
@@ -94,6 +95,9 @@ float hit_strength_threshold[3];
 
 /* ----------------------------------------------------------------------------------------------------------------------------------------------------- */
 
+/* Variable and pin for SD Card/Audio setup */
+#define SD_ChipSelectPin 10
+TMRpcm tmrpcm;
 
 
 void setup() {
@@ -110,10 +114,11 @@ void setup() {
   OLED.drawString(0,2,"to");
   OLED.drawString(0,4,"Bonk-It!");
 
+  sd_card_setup();
   
   initialize_pads();
   
-  boot_sequence();
+  boot_sequence(); // DOES NOTHING AS OF NOW
 
 #if debugMode
   Serial.println("Waiting for start button");
@@ -151,8 +156,11 @@ void play_game() {
     // Update round variables
     random_pad = random(1,3); /* 1 = Pad 1, 2 = Pad 2, 3 = Pad 3 */
     hit_strength = random(0,1); /* 0 = weak, 1 = hard */
-    magnet_hit = random(0,1); /* 0 = magnet, 1 = non-magnet */
+    magnet_hit = random(0,1); /* 0 = non-magnet, 1 = magnet */
     pad_returned = 0; /* Which pad was hit, returned from poll_FSR */
+
+    show_task(random_pad, hit_strength, magnet_hit);
+    audio_cue(random_pad, hit_strength, magnet_hit);
 
     // Setup timer
     time = millis();
@@ -171,6 +179,7 @@ void play_game() {
     {
       if(pad_returned == random_pad) /* Correct pad was hit */
       {
+        toggle_LED_ring(pad_returned);
         /* Check if correct strength */
         if(check_correct_hit_strength(pad_returned, hit_strength))
         {
@@ -190,7 +199,34 @@ void play_game() {
     /* If magnetic hit */
     else
     {
-      
+      if(pad_returned == random_pad) /* Correct pad was hit */
+      {
+        toggle_LED_ring(pad_returned);
+        /* Check if correct strength */
+        if(check_correct_hit_strength(pad_returned, hit_strength))
+        {
+          /* Check if used magnet side */
+          if(magnet_read[pad_returned] == 1)
+          {
+            /* Update the score and display and proceed to next round */
+            score++;
+            show_score(false); //true => game continues and show score
+            continue; /* Go back to the start of the while loop function */
+          }
+          else
+          {
+            /* Didnt use magnet, the user loses */
+            break;
+          }
+          
+        }
+        else /* Incorrect strength, the user loses */
+        {
+          /* Breaks loop and executes game_over() */
+          break;
+        }
+      }
+    
     }
   }
 
@@ -199,98 +235,7 @@ void play_game() {
   return;
 }
 
-void magnet_hit(int pad_number, bool isStrong)
-{
-  /* bool hit_detected = 0;
-   *  
-   *  Play audio cue
-   *    audio_cue(game_choice);
-   *  Turn on necessary lights of the pad
-   *    toggle_pad_LED();
-   *    
-   *  Start timer for user to do the action
-   *  
-   */
-  /* While loop to poll the pin corresponding to the pad number /*
-    while(true)
-    {
 
-      if(timer has ended)
-      {
-        display that they lose
-        break;
-      }
-      
-      hit_voltage = analogRead(pad_pin)
-      if(hit_voltage > 0)
-      {
-      magnet_used = digitalRead(magnet_sensor_pin);
-        break;
-      }
-
-    }
-
-    Player has hit the pad in time. Check to see if pad is within allowed
-    threshold of force needed and if magnet was used
-    if(hit_voltage > threshold of soft/strong || magnet_used == false)
-    {
-      display they lose
-      update_display(lost);
-    }
-    else
-    {
-      continue game and go back to main
-    }
-      
-   */
-}
-
-void non_magnet_hit(int pad_number, bool isStrong)
-{
-  /* bool hit_detected = 0;
-   *  
-   *  Play audio cue
-   *    audio_cue(game_choice);
-   *  Turn on necessary lights of the pad
-   *    toggle_pad_LED();
-   *    
-   *  Start timer for user to do the action
-   *  
-   */
-  /* While loop to poll the pin corresponding to the pad number /*
-    while(true)
-    {
-
-      if(timer has ended)
-      {
-        display that they lose
-        break;
-      }
-      
-      hit_voltage = analogRead(pad_pin)
-      if(hit_voltage > 0)
-      {
-        break;
-      }
-
-    }
-
-    Player has hit the pad in time. Check to see if pad is within allowed
-    threshold of force needed
-    if(hit_voltage > threshold of soft/strong)
-    {
-      display they lose
-      update_display(lost);
-    }
-    else
-    {
-      update_display(continue
-      continue game and go back to main
-    }
-      
-   */
-
-}
 
 void game_over()
 {
@@ -341,7 +286,7 @@ void show_score(bool lost)
  *  
  *  @param hit_strength: How hard the pad was hit, used to determine how much of ring to light up
  */
-void toggle_LED_ring(uint8_t pad_number, double hit_strength)
+void toggle_LED_ring(uint8_t pad_number)
 {
   /* Light up the LED corresponding to the selected pad_number
    *  digitalWrite(pad_number, HIGH);
@@ -351,8 +296,8 @@ void toggle_LED_ring(uint8_t pad_number, double hit_strength)
   if (!pad_number) return;
 
   // double hit_strength = 1.0;
-  double decrement = hit_strength/12;;
-
+  //double decrement = hit_strength/12;;
+  double decrement = 0.41; /* 5 Volts / 12 LED's */
   // The first NeoPixel in a strand is #0, second is 1, all the way up
   // to the count of pixels minus one.
 
@@ -364,10 +309,12 @@ void toggle_LED_ring(uint8_t pad_number, double hit_strength)
 
   uint8_t i = (pad_number - 1) * 12;
   uint8_t pad_index = i;
-  while(hit_strength > 0)
+  double hit_voltage;
+  hit_voltage = force_read_voltage[pad_number];
+  while(hit_voltage > 0)
   {
     pixels.setPixelColor(i,colors[i - pad_index]);
-    hit_strength = hit_strength - decrement;
+    hit_voltage = hit_voltage - decrement;
     pixels.show();
     delay(DELAYVAL);
     i++;
@@ -376,13 +323,29 @@ void toggle_LED_ring(uint8_t pad_number, double hit_strength)
 
 void audio_cue(uint8_t pad_number, bool isStrong, bool hit_with_magnet)
 {
-  /* Depending on the input, output the correct audio cue
-   *  i.e. if audio_cue(1, true, true)
-   *  then output "Pad 1, strong, with magnet)
-   *  
-   *  Will store audio files on an SD card and play them depending on choice
-   *  
-   */
+  String file = "";
+  file.concat(pad_number);
+
+  if(isStrong == true)
+  {
+    file.concat("_strong");
+  }
+  else
+  {
+    file.concat("_weak");
+  }
+
+  if(hit_with_magnet == true)
+  {
+    file.concat("_magnet.WAV");
+  }
+  else
+  {
+    file.concat("_non-magnet.WAV");
+  }
+
+  tmrpcm.play(file.c_str());
+
 }
 
 void boot_sequence()
@@ -425,6 +388,26 @@ uint8_t poll_FSR()
   return 0;
 }
 
+/* Function to poll the FSR's and magnets and return which one was hit */
+uint8_t poll_FSR_with_magnet()
+{
+  for (uint8_t i = 0; i < 3; i++) {
+    /* Read in from all of the pins */
+    force_read[i] = analogRead(fsr_pins[i]);
+    magnet_read[i] = digitalRead(magnet_pins[i]);
+
+    /* Convert values to voltages */
+    force_read_voltage[i] = force_read[i] * (5.0 / 1023.0);
+
+    /* Check if any of the read voltages surpass the threshold for its pad, if so return that the pad was hit */
+    if(force_read_voltage[i] > force_threshold[i] + force_offset)
+      return i + 1;
+  }
+
+  // No pad was hit
+  return 0;
+}
+
 /* Helper function to check if the pad was hit with the correct strength */
 bool check_correct_hit_strength(uint8_t pad_number, uint8_t hit_strength)
 {
@@ -453,4 +436,38 @@ bool check_correct_hit_strength(uint8_t pad_number, uint8_t hit_strength)
       return false;
     }
   }
+}
+
+void show_task(uint8_t pad_number, bool hit_strength, bool magnet_hit)
+{
+    OLED.clear();
+    OLED.drawString(0,2, "Pad: "); 
+    OLED.setCursor(8,2);
+    OLED.print(pad_number);
+
+    if(hit_strength == 0)
+    {
+      OLED.drawString(0,4,"Weak");
+    }
+    else
+    {
+      OLED.drawString(0,4,"Strong");
+
+    }
+
+    if(magnet_hit == 1)
+    {
+      OLED.drawString(0,6,"Magnet");
+    }
+    else
+    {
+      OLED.drawString(0,6,"No-Magnet");
+    }
+}
+
+void sd_card_setup()
+{
+    tmrpcm.speakerPin=9; // 9 for Uno, Nano, etc.
+    SD.begin(SD_ChipSelectPin);
+    tmrpcm.setVolume(7);
 }
