@@ -6,7 +6,7 @@
 
 
 
-#define debugMode 1 /* 1 for serial monitor output, 0 for no debug */
+#define debugMode 0 /* 1 for serial monitor output, 0 for no debug */
 
 
 // Which pin on the Arduino is connected to the NeoPixels?
@@ -31,7 +31,7 @@ double colors[12] = {pixels.Color(255,255,0),pixels.Color(255,238,0),pixels.Colo
 /* ----------------------------------------------------- OLED Display Related Variables and Constructors ----------------------------------------------------- */
 
 /* OLED Display Constructor */
-U8X8_SSD1306_128X64_NONAME_4W_SW_SPI OLED(/* clock=*/ 13, /* data=*/ 11, /* cs=*/ 7, /* dc=*/ 8, /* reset=*/ 4);
+U8X8_SSD1306_128X64_NONAME_4W_HW_SPI OLED(/* cs=*/ 7, /* dc=*/ 8, /* reset=*/ 4); /* clock=13, data=11 */
 /* 128 x 64 display = 16 columns x 8 rows */
 
 uint8_t score = 0; /* Score for the user */
@@ -114,7 +114,7 @@ void setup() {
   OLED.drawString(0,2,"to");
   OLED.drawString(0,4,"Bonk-It!");
 
-  sd_card_setup();
+  //sd_card_setup();
   
   initialize_pads();
   
@@ -160,7 +160,7 @@ void play_game() {
     pad_returned = 0; /* Which pad was hit, returned from poll_FSR */
 
     show_task(random_pad, hit_strength, magnet_hit);
-    audio_cue(random_pad, hit_strength, magnet_hit);
+    //audio_cue(random_pad, hit_strength, magnet_hit);
 
     // Setup timer
     time = millis();
