@@ -1,22 +1,22 @@
 #include "SPI.h"
 
 
-#define magnet1  A0
-#define magnet2  A1
-#define magnet3  A2
+#define magnet1  A3
+#define magnet2  A4
+#define magnet3  A5
 
 //#define FSR1  A3
 //#define FSR2  A4
 //#define FSR3  A5
 
-#define FSR1  A2
+#define FSR1  A0
 #define FSR2  A1
-#define FSR3  A0
+#define FSR3  A2
 /* On arduino uno, FSR1 = A2, FSR2 = A1, FSR3 = A0 */
 
 double magnet_threshold;
 
-float force_threshold[3] = {5,5,5};
+float force_threshold[3];
 
 float force_read_voltage;
 
@@ -45,10 +45,18 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly
 
+uint16_t magnet_read = 0;
+magnet_read = analogRead(magnet1);
+Serial.println(magnet_read);
 
-  //test_magnets();
-
-  test_FSR();
+//float force_voltage = 0;
+//float force_read = 0;
+//  //test_magnets();
+//force_read = analogRead(FSR3);
+//force_voltage = force_read * (5.0 / 1023.0);
+//  Serial.println(force_voltage);
+  
+  //test_FSR();
 
 }
 

@@ -25,7 +25,7 @@ void setup(void) {
 //  SD.begin(SD_ChipSelectPin);
 //
   //Sets the volume 
-  tmrpcm.setVolume(7);
+  tmrpcm.setVolume(8);
 }
 
 void loop(void) {
