@@ -474,11 +474,11 @@ void initialize_pads()
   /* Read in sensor output and set value read in as the zero */
     for (uint8_t i = 0; i < 3; i++) {
       force_read[i] = analogRead(FSR[i]);
-//      force_threshold[i] = force_read[i] * (5.0 / 1023.0);
-//      hit_strength_threshold[i] = force_threshold[i] + 1.5; //TODO Check the offset with testing to see where soft/hard hit should end
-
-      force_threshold[i] = 0.15;
-      hit_strength_threshold[i] = 0.2;
+      force_threshold[i] = force_read[i] * (5.0 / 1023.0);
+      hit_strength_threshold[i] = force_threshold[i] + 0.3; //TODO Check the offset with testing to see where soft/hard hit should end
+//
+//      force_threshold[i] = 0.15;
+//      hit_strength_threshold[i] = 0.2;
       
     }
 
