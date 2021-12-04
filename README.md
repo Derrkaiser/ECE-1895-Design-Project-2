@@ -10,13 +10,13 @@ Tori Csanadi   : Enclosure Design, Preliminary Electronics Testing
 
 ### Project Organization:
 Software is located in Software Design Files\
-	Main contains the game program\
-	Other folders are testing code for their labeled component
+	- Main contains the game program\
+	- Other folders are testing code for their labeled component
 
 PCB files are located in Hardware Design Files
 
-Enclosure files are located in Enclosure Design Files
-	Individual components are in their seperate subfolders
+Enclosure files are located in Enclosure Design Files\
+	- Individual components are in their seperate subfolders
 
 Audio files that were stored on the SD card located in Audio Files
 	
