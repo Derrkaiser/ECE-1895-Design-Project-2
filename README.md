@@ -9,8 +9,8 @@ Matthew Kaiser : Software Design, Software Integration\
 Tori Csanadi   : Enclosure Design, Preliminary Electronics Testing
 
 ### Project Organization:
-Software is located in Software Design Files
-	Main contains the game program
+Software is located in Software Design Files\
+	Main contains the game program\
 	Other folders are testing code for their labeled component
 
 PCB files are located in Hardware Design Files
